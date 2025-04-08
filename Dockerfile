@@ -33,8 +33,11 @@ COPY . .
 RUN chmod -R 775 storage bootstrap/cache \
  && chown -R www-data:www-data .
 
-# Ensure bootstrap/cache exists
-RUN mkdir -p bootstrap/cache && chmod -R 775 bootstrap/cache
+# Tạo bootstrap/cache nếu chưa có
+RUN mkdir -p bootstrap/cache && \
+    chmod -R 775 storage bootstrap/cache && \
+    chown -R www-data:www-data .
+
 
 # Install Composer dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
