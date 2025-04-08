@@ -1,52 +1,39 @@
-# Base image
-FROM php:8.2-fpm
+# Sử dụng image PHP chính thức có sẵn Apache
+FROM php:8.2-apache
 
-# Set working directory
+# Cài các extension cần thiết cho Laravel
+RUN apt-get update && apt-get install -y \
+    git zip unzip libpng-dev libonig-dev libxml2-dev curl \
+    libzip-dev libpq-dev libjpeg-dev libfreetype6-dev \
+    && docker-php-ext-install pdo pdo_mysql zip mbstring exif pcntl bcmath
+
+# Cài Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Tạo thư mục làm việc
 WORKDIR /var/www
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpng-dev \
-    libjpeg-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    git \
-    curl \
-    nano \
-    libzip-dev \
-    nodejs \
-    npm
-
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Copy application code
+# Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Laravel permissions fix
-RUN chmod -R 775 storage bootstrap/cache \
- && chown -R www-data:www-data .
+# Tạo thư mục cache nếu chưa có
+RUN mkdir -p bootstrap/cache
 
-# Tạo bootstrap/cache nếu chưa có
-RUN mkdir -p bootstrap/cache && \
-    chmod -R 775 storage bootstrap/cache && \
-    chown -R www-data:www-data .
-
-
-# Install Composer dependencies
+# Cài các thư viện PHP
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Generate app key
+# Copy .env.example thành .env nếu chưa có
+RUN cp .env.example .env
+
+# Generate key sau khi đã có .env và vendor
 RUN php artisan key:generate
 
-# Expose port
+# Fix quyền cho storage và bootstrap/cache
+RUN chmod -R 775 storage bootstrap/cache && \
+    chown -R www-data:www-data .
+
+# Expose cổng mặc định
 EXPOSE 8000
 
-# Start Laravel server
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# Lệnh chạy chính (Laravel serve)
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
