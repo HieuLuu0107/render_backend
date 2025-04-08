@@ -6,20 +6,41 @@ WORKDIR /var/www
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libpq-dev libzip-dev libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql zip
+    build-essential \
+    libpng-dev \
+    libjpeg-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    nano \
+    libzip-dev \
+    nodejs \
+    npm
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy source code
+# Copy application code
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Laravel permissions fix
+RUN chmod -R 775 storage bootstrap/cache \
+ && chown -R www-data:www-data .
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www/storage
+# Ensure bootstrap/cache exists
+RUN mkdir -p bootstrap/cache && chmod -R 775 bootstrap/cache
+
+# Install Composer dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+# Generate app key
+RUN php artisan key:generate
 
 # Expose port
 EXPOSE 8000
