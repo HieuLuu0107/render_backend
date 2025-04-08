@@ -1,0 +1,16 @@
+/vendor
+/node_modules
+/.env
+/.idea
+/.vscode
+/storage/*.key
+/storage/logs
+/bootstrap/cache/*.php
+/public/storage
+.env.backup
+composer.lock
+npm-debug.log
+yarn-error.log
+.phpunit.result.cache
+.DS_Store
+*.log
